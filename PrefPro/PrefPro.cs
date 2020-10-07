@@ -13,7 +13,7 @@ namespace PrefPro
 {
     public unsafe class PrefPro : IDalamudPlugin
     {
-        public string Name => "Sample Plugin";
+        public string Name => "PrefPro";
 
         private const string commandName = "/prefpro";
 
