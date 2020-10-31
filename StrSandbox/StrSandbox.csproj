@@ -6,4 +6,10 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Reference Include="Dalamud, Version=5.1.0.9, Culture=neutral, PublicKeyToken=null">
+        <HintPath>..\..\Dalamud\Dalamud\bin\Debug\Dalamud.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
 </Project>
