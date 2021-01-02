@@ -35,10 +35,10 @@ namespace PrefPro
         }
         
         public string Name => "PrefPro";
-        private const string commandName = "/prefpro";
+        public DalamudPluginInterface pi;
 
+        private const string commandName = "/prefpro";
         private SeStringManager manager;
-        private DalamudPluginInterface pi;
         private Configuration configuration;
         private PluginUI ui;
         

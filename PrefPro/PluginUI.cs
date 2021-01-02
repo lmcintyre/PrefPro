@@ -67,7 +67,7 @@ namespace PrefPro
             ImGui.SetNextWindowSize(new Vector2(270, 100), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("PrefPro Config", ref _settingsVisible, ImGuiWindowFlags.AlwaysVerticalScrollbar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
 #else
-            ImGui.SetNextWindowSize(new Vector2(340, 320), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(new Vector2(340 * ImGui.GetIO().FontGlobalScale, 320 * ImGui.GetIO().FontGlobalScale), ImGuiCond.Always);
             if (ImGui.Begin("PrefPro Config", ref _settingsVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
 #endif
             {
@@ -103,6 +103,7 @@ namespace PrefPro
                     var split = setName.Split(' ');
                     _tmpFirstName = split[0];
                     _tmpLastName = split[1];
+                    _configuration.Save();
                 }
                 ImGui.SameLine();
                 if (ImGui.Button("Reset##prefProNameReset"))
@@ -112,6 +113,7 @@ namespace PrefPro
                     var split = resetName.Split(' ');
                     _tmpFirstName = split[0];
                     _tmpLastName = split[1];
+                    _configuration.Save();
                 }
                 ImGui.PopItemWidth();
                 ImGui.Indent(-10f);
