@@ -7,8 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Reference Include="Dalamud, Version=5.1.0.9, Culture=neutral, PublicKeyToken=null">
-        <HintPath>..\..\Dalamud\Dalamud\bin\Debug\Dalamud.dll</HintPath>
+      <Reference Include="Dalamud, Version=5.2.3.3, Culture=neutral, PublicKeyToken=null">
+        <HintPath>..\..\..\..\AppData\Roaming\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
       </Reference>
     </ItemGroup>
 
