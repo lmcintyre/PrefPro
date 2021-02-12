@@ -14,8 +14,6 @@ namespace StrSandbox
         private static bool male = true;
         private static string playerName = "Not Perchbird";
         
-        
-
         // Paste a dump here, and write a function to handle what you want
         private static byte[] test = new byte[]
         {
