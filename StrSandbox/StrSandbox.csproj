@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Reference Include="Dalamud, Version=5.2.3.3, Culture=neutral, PublicKeyToken=null">
+      <Reference Include="Dalamud">
         <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
       </Reference>
     </ItemGroup>

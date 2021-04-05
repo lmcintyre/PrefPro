@@ -2,16 +2,9 @@
 using Dalamud.Plugin;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Channels;
-using System.Text;
-using Dalamud.Game.Chat.SeStringHandling;
-using Dalamud.Game.Chat.SeStringHandling.Payloads;
-using Dalamud.Game.ClientState.Actors;
-using Dalamud.Game.Internal.Libc;
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
 
 namespace PrefPro

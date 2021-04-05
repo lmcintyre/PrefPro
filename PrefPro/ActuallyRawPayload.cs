@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using Dalamud.Game.Chat.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling;
 
 namespace PrefPro
 {
