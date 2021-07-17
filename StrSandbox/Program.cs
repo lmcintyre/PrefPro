@@ -91,7 +91,7 @@ namespace StrSandbox
         static unsafe void Main1(string[] args)
         {
             var toTest = omegaFullNameCrash;
-            SeStringManager mgr = new SeStringManager(new DataManager(ClientLanguage.English));
+            // SeStringManager mgr = new SeStringManager(new DataManager(ClientLanguage.English));
             
             fixed (byte* text = toTest)
             {
@@ -99,7 +99,7 @@ namespace StrSandbox
                 // PrintStackedView(toTest, 50, 50);
 
                 // ProcessGenderedParam(text);
-                HandlePtr(mgr, text);
+                // HandlePtr(mgr, text);
 
                 PrintStackedView(text);
                 // PrintStackedView(toTest, 50, 50);

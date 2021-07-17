@@ -3,3 +3,4 @@ author: perchbird
 description: |-
   Changes in-game dialogue to your desired gender and name. /prefpro for the menu.
 repo_url: https://github.com/lmcintyre/PrefPro
+dalamud_api_level: 4
