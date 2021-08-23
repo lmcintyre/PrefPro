@@ -4,9 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using Dalamud.Game;
+using Dalamud.Game.ClientState;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
+using Dalamud.IoC;
+using Dalamud.Logging;
 
 namespace PrefPro
 {
@@ -27,51 +31,60 @@ namespace PrefPro
             Random,
             Model
         }
-        
-        public string Name => "PrefPro";
-        public DalamudPluginInterface pi;
 
-        private const string commandName = "/prefpro";
-        private SeStringManager manager;
-        private Configuration configuration;
-        private PluginUI ui;
+        public string Name => "PrefPro";
+        private const string CommandName = "/prefpro";
+        
+        private readonly DalamudPluginInterface _pi;
+        private readonly CommandManager _commandManager;
+        private readonly ClientState _clientState;
+        private readonly SeStringManager _seStringManager;
+        private readonly Configuration _configuration;
+        private readonly PluginUI _ui;
         
         //reEncode[1] == 0x29 && reEncode[2] == 0x3 && reEncode[3] == 0xEB && reEncode[4] == 0x2
-        private static byte[] FullNameBytes = {0x02, 0x29, 0x03, 0xEB, 0x02, 0x03};
-        private static byte[] FirstNameBytes = {0x02, 0x2C, 0x0D, 0xFF, 0x07, 0x02, 0x29, 0x03, 0xEB, 0x02, 0x03, 0xFF, 0x02, 0x20, 0x02, 0x03};
-        private static byte[] LastNameBytes = {0x02, 0x2C, 0x0D, 0xFF, 0x07, 0x02, 0x29, 0x03, 0xEB, 0x02, 0x03, 0xFF, 0x02, 0x20, 0x03, 0x03};
+        private static readonly byte[] FullNameBytes = {0x02, 0x29, 0x03, 0xEB, 0x02, 0x03};
+        private static readonly byte[] FirstNameBytes = {0x02, 0x2C, 0x0D, 0xFF, 0x07, 0x02, 0x29, 0x03, 0xEB, 0x02, 0x03, 0xFF, 0x02, 0x20, 0x02, 0x03};
+        private static readonly byte[] LastNameBytes = {0x02, 0x2C, 0x0D, 0xFF, 0x07, 0x02, 0x29, 0x03, 0xEB, 0x02, 0x03, 0xFF, 0x02, 0x20, 0x03, 0x03};
         
         private delegate int GetStringPrototype(void* unknown, byte* text, void* unknown2, void* stringStruct);
-        private Hook<GetStringPrototype> GetStringHook;
-        
-        public static string filterText = "";
-        public string PlayerName => pi?.ClientState?.LocalPlayer?.Name.ToString();
-        public ulong CurrentPlayerContentId => pi.ClientState?.LocalContentId ?? 0;
+        private readonly Hook<GetStringPrototype> _getStringHook;
 
-        public void Initialize(DalamudPluginInterface pluginInterface)
+        private static string filterText = "";
+        public string PlayerName => _clientState?.LocalPlayer?.Name.ToString();
+        public ulong CurrentPlayerContentId => _clientState?.LocalContentId ?? 0;
+
+        public PrefPro(
+            [RequiredVersion("1.0")] SigScanner sigScanner,
+            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
+            [RequiredVersion("1.0")] CommandManager commandManager,
+            [RequiredVersion("1.0")] ClientState clientState,
+            [RequiredVersion("1.0")] SeStringManager seStringManager
+            )
         {
-            pi = pluginInterface;
+            _pi = pluginInterface;
+            _commandManager = commandManager;
+            _clientState = clientState;
+            _seStringManager = seStringManager;
             
-            configuration = pi.GetPluginConfig() as Configuration ?? new Configuration();
-            configuration.Initialize(pi, this);
+            _configuration = _pi.GetPluginConfig() as Configuration ?? new Configuration();
+            _configuration.Initialize(_pi, this);
 
-            ui = new PluginUI(configuration, this);
+            _ui = new PluginUI(_configuration, this);
             
-            pi.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
+            _commandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
             {
-                HelpMessage = "Opens the PrefPro menu."
+                HelpMessage = "Display the PrefPro configuration interface."
             });
 
-            string getStringStr = "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 83 B9 ?? ?? ?? ?? ?? 49 8B F9 49 8B F0 48 8B EA 48 8B D9 75 09 48 8B 01 FF 90 ?? ?? ?? ??";
-            IntPtr getStringPtr = pi.TargetModuleScanner.ScanText(getStringStr);
-            GetStringHook = new Hook<GetStringPrototype>(getStringPtr, (GetStringPrototype) GetStringDetour);
+            string getStringStr = "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 83 B9 ?? ?? ?? ?? ?? 49 8B F9 49 8B F0 48 8B EA 48 8B D9 75 09 48 8B 01 FF 90";
+            IntPtr getStringPtr = sigScanner.ScanText(getStringStr);
+            _getStringHook = new Hook<GetStringPrototype>(getStringPtr, GetStringDetour);
             
-            GetStringHook.Enable();
-
-            manager = new SeStringManager(pi.Data);
+            _getStringHook.Enable();
             
-            pi.UiBuilder.OnBuildUi += DrawUI;
-            pi.UiBuilder.OnOpenConfigUi += (sender, args) => DrawConfigUI();
+            _pi.UiBuilder.Draw += DrawUI;
+            _pi.UiBuilder.OpenConfigUi += (_, _) => DrawConfigUI();
         }
 
         private int GetStringDetour(void* unknown, byte* text, void* unknown2, void* stringStruct)
@@ -92,15 +105,15 @@ namespace PrefPro
 
             }
 #endif
-            if (configuration.Enabled)
+            if (_configuration.Enabled)
             {
-                HandlePtr(manager, ref text);
+                HandlePtr(_seStringManager, ref text);
             }
 #if DEBUG
             len = 0;
             text2 = text;
             while (*text2 != 0) { text2++; len++; }
-            int retVal = GetStringHook.Original(unknown, text, unknown2, stringStruct);
+            int retVal = _getStringHook.Original(unknown, text, unknown2, stringStruct);
             str = Encoding.ASCII.GetString(text, len);
             if (filterText != "" && str.Contains(filterText))
             {
@@ -113,7 +126,7 @@ namespace PrefPro
             }
             return retVal;
 #else
-            return GetStringHook.Original(unknown, text, unknown2, stringStruct);
+            return _getStringHook.Original(unknown, text, unknown2, stringStruct);
 #endif
         }
         
@@ -144,14 +157,6 @@ namespace PrefPro
             if (ByteArrayEquals(encoded, byteArr))
                 return;
             
-            // var encodedNullTerminated = new byte[encoded.Length + 1];
-            // encoded.CopyTo(encodedNullTerminated, 0);
-            // encodedNullTerminated[encoded.Length] = 0;
-            //
-            // var newStr = pi.Framework.Libc.NewString(encodedNullTerminated);
-            //
-            // ptr = (byte*) newStr.Address.ToPointer();
-
             if (encoded.Length <= byteArr.Length)
             {
                 int j;
@@ -180,7 +185,7 @@ namespace PrefPro
             byte[] reEncode = thisPayload.Encode();
             // We have to compare bytes here because there is a wildcard in the middle
             if (reEncode[1] != 8 || reEncode[3] != 0xE9 || reEncode[4] != 5
-                || configuration.Gender == GenderSetting.Model)
+                || _configuration.Gender == GenderSetting.Model)
                 return thisPayload;
             
             int femaleStart = 7;
@@ -189,10 +194,10 @@ namespace PrefPro
             int maleLen = reEncode[maleStart - 1] - 1;
 
             bool male;
-            if (configuration.Gender == GenderSetting.Random)
+            if (_configuration.Gender == GenderSetting.Random)
                 male = new Random().Next(0, 2) == 0;
             else
-                male = configuration.Gender == GenderSetting.Male;
+                male = _configuration.Gender == GenderSetting.Male;
             
             int len = male ? maleLen : femaleLen;
             int start = male ? maleStart : femaleStart;
@@ -209,7 +214,7 @@ namespace PrefPro
             byte[] reEncode = thisPayload.Encode();
             if (!ByteArrayEquals(reEncode, FullNameBytes)) return thisPayload;
 
-            return new TextPayload(GetNameText(configuration.FullName));
+            return new TextPayload(GetNameText(_configuration.FullName));
         }
 
         private Payload HandleFirstNamePayload(Payload thisPayload)
@@ -217,7 +222,7 @@ namespace PrefPro
             byte[] reEncode = thisPayload.Encode();
             if (!ByteArrayEquals(reEncode, FirstNameBytes)) return thisPayload;
             
-            return new TextPayload(GetNameText(configuration.FirstName));
+            return new TextPayload(GetNameText(_configuration.FirstName));
         }
         
         private Payload HandleLastNamePayload(Payload thisPayload)
@@ -225,12 +230,12 @@ namespace PrefPro
             byte[] reEncode = thisPayload.Encode();
             if (!ByteArrayEquals(reEncode, LastNameBytes)) return thisPayload;
 
-            return new TextPayload(GetNameText(configuration.LastName));
+            return new TextPayload(GetNameText(_configuration.LastName));
         }
 
         private string GetNameText(NameSetting setting)
         {
-            var name = configuration.Name;
+            var name = _configuration.Name;
             var split = name.Split(' ');
             var first = split[0];
             var last = split[1];
@@ -299,28 +304,28 @@ namespace PrefPro
 
         public void Dispose()
         {
-            ui.Dispose();
+            _ui.Dispose();
             
-            GetStringHook.Disable();
-            GetStringHook.Dispose();
+            _getStringHook.Disable();
+            _getStringHook.Dispose();
 
-            pi.CommandManager.RemoveHandler(commandName);
-            pi.Dispose();
+            _commandManager.RemoveHandler(CommandName);
+            _pi.Dispose();
         }
 
         private void OnCommand(string command, string args)
         {
-            ui.SettingsVisible = true;
+            _ui.SettingsVisible = true;
         }
 
         private void DrawUI()
         {
-            ui.Draw();
+            _ui.Draw();
         }
         
         private void DrawConfigUI()
         {
-            ui.SettingsVisible = true;
+            _ui.SettingsVisible = true;
         }
     }
 }

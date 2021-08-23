@@ -5,14 +5,11 @@ using System.Text.RegularExpressions;
 
 namespace PrefPro
 {
-    // It is good to have this be disposable in general, in case you ever need it
-    // to do any cleanup
     class PluginUI : IDisposable
     {
-        private Configuration _configuration;
-        
-        private bool _settingsVisible = false;
-        private PrefPro _prefPro;
+        private readonly Configuration _configuration;
+        private readonly PrefPro _prefPro;
+        private bool _settingsVisible;
 
         private const string FirstLastDesc = "First name, then last";
         private const string FirstOnlyDesc = "First name only";
@@ -194,42 +191,7 @@ namespace PrefPro
             }
             ImGui.End();
         }
-
-        // private void RenderNameSetting(string label, )
-        // {
-        //     ImGui.Text("When NPCs use my full name, instead use...");
-        //     ImGui.Indent(5f);
-        //     if (ImGui.BeginCombo("##prefProComboBox:", currentGender))
-        //     {
-        //         if (ImGui.Selectable("Male"))
-        //             _configuration.SelectedGender = "Male";
-        //         if (ImGui.Selectable("Female"))
-        //             _configuration.SelectedGender = "Female";
-        //         if (ImGui.Selectable("Model gender"))
-        //             _configuration.SelectedGender = _prefPro.PlayerGender;
-        //         _configuration.Save();
-        //         ImGui.EndCombo();
-        //     }
-        //
-        //     ImGui.Text("Refer to my character as:");
-        //     ImGui.SameLine();
-        //         
-        //     ImGui.PushItemWidth(80);
-        //         
-        //     if (ImGui.BeginCombo("##prefProComboBox:", currentGender))
-        //     {
-        //         if (ImGui.Selectable("Male"))
-        //             _configuration.SelectedGender = "Male";
-        //         if (ImGui.Selectable("Female"))
-        //             _configuration.SelectedGender = "Female";
-        //         if (ImGui.Selectable("Model gender"))
-        //             _configuration.SelectedGender = _prefPro.PlayerGender;
-        //         _configuration.Save();
-        //         ImGui.EndCombo();
-        //     }
-        //     ImGui.PopItemWidth();
-        // }
-
+        
         private string SanitizeName(string first, string last)
         {
             string newFirst = first;
