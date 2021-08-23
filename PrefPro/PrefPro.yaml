@@ -8,7 +8,7 @@ description: |-
   vice versa. In addition, there are a few name customization options - if you
   want to only be referred to by your last name, so be it.
   Note: This plugin currently will not swap voiced cutscene dialogue.
-punchline: Changes in-game dialogue to referece your desired gender and name.
+punchline: Changes in-game dialogue to reference your desired gender and name.
 repo_url: https://github.com/lmcintyre/PrefPro
 dalamud_api_level: 4
 icon_url: https://raw.githubusercontent.com/lmcintyre/PrefPro/main/images/icon.png
