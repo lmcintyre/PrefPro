@@ -3,6 +3,7 @@ using Dalamud.Plugin;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
@@ -44,7 +45,7 @@ namespace PrefPro
         private Hook<GetStringPrototype> GetStringHook;
         
         public static string filterText = "";
-        public string PlayerName => pi?.ClientState?.LocalPlayer?.Name;
+        public string PlayerName => pi?.ClientState?.LocalPlayer?.Name.ToString();
         public ulong CurrentPlayerContentId => pi.ClientState?.LocalContentId ?? 0;
 
         public void Initialize(DalamudPluginInterface pluginInterface)
@@ -227,7 +228,7 @@ namespace PrefPro
             return new TextPayload(GetNameText(configuration.LastName));
         }
 
-        private string GetNameText(PrefPro.NameSetting setting)
+        private string GetNameText(NameSetting setting)
         {
             var name = configuration.Name;
             var split = name.Split(' ');
