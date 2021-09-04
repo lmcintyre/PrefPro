@@ -38,7 +38,6 @@ namespace PrefPro
         private readonly DalamudPluginInterface _pi;
         private readonly CommandManager _commandManager;
         private readonly ClientState _clientState;
-        private readonly SeStringManager _seStringManager;
         private readonly Configuration _configuration;
         private readonly PluginUI _ui;
         
@@ -58,14 +57,12 @@ namespace PrefPro
             [RequiredVersion("1.0")] SigScanner sigScanner,
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
             [RequiredVersion("1.0")] CommandManager commandManager,
-            [RequiredVersion("1.0")] ClientState clientState,
-            [RequiredVersion("1.0")] SeStringManager seStringManager
+            [RequiredVersion("1.0")] ClientState clientState
             )
         {
             _pi = pluginInterface;
             _commandManager = commandManager;
             _clientState = clientState;
-            _seStringManager = seStringManager;
             
             _configuration = _pi.GetPluginConfig() as Configuration ?? new Configuration();
             _configuration.Initialize(_pi, this);
@@ -84,7 +81,7 @@ namespace PrefPro
             _getStringHook.Enable();
             
             _pi.UiBuilder.Draw += DrawUI;
-            _pi.UiBuilder.OpenConfigUi += (_, _) => DrawConfigUI();
+            _pi.UiBuilder.OpenConfigUi += DrawConfigUI;
         }
 
         private int GetStringDetour(void* unknown, byte* text, void* unknown2, void* stringStruct)
@@ -107,7 +104,7 @@ namespace PrefPro
 #endif
             if (_configuration.Enabled)
             {
-                HandlePtr(_seStringManager, ref text);
+                HandlePtr(ref text);
             }
 #if DEBUG
             len = 0;
@@ -130,7 +127,7 @@ namespace PrefPro
 #endif
         }
         
-        private void HandlePtr(SeStringManager mgr, ref byte* ptr)
+        private void HandlePtr(ref byte* ptr)
         {
             var byteList = new List<byte>();
             int i = 0;
@@ -139,7 +136,7 @@ namespace PrefPro
             var byteArr = byteList.ToArray();
             
             // Write handlers, put them here
-            SeString parsed = mgr.Parse(byteArr);
+            var parsed = SeString.Parse(byteArr);
             for (int payloadIndex = 0; payloadIndex < parsed.Payloads.Count; payloadIndex++)
             {
                 var thisPayload = parsed.Payloads[payloadIndex];

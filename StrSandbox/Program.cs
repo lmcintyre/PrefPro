@@ -146,7 +146,7 @@ namespace StrSandbox
             var byteArr = byteList.ToArray();
             
             // Write handlers, put them here
-            SeString parsed = mgr.Parse(byteArr);
+            var parsed = SeString.Parse(byteArr);
             for (int payloadIndex = 0; payloadIndex < parsed.Payloads.Count; payloadIndex++)
             {
                 var thisPayload = parsed.Payloads[payloadIndex];
