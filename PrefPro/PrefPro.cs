@@ -49,7 +49,6 @@ namespace PrefPro
         private delegate int GetStringPrototype(void* unknown, byte* text, void* unknown2, void* stringStruct);
         private readonly Hook<GetStringPrototype> _getStringHook;
 
-        private static string filterText = "";
         public string PlayerName => _clientState?.LocalPlayer?.Name.ToString();
         public ulong CurrentPlayerContentId => _clientState?.LocalContentId ?? 0;
 
