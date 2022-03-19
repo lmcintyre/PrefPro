@@ -39,6 +39,7 @@ namespace PrefPro
         private readonly CommandManager _commandManager;
         private readonly ClientState _clientState;
         private readonly Configuration _configuration;
+        private readonly Framework _framework;
         private readonly PluginUI _ui;
         
         //reEncode[1] == 0x29 && reEncode[2] == 0x3 && reEncode[3] == 0xEB && reEncode[4] == 0x2
@@ -48,20 +49,29 @@ namespace PrefPro
         
         private delegate int GetStringPrototype(void* unknown, byte* text, void* unknown2, void* stringStruct);
         private readonly Hook<GetStringPrototype> _getStringHook;
+        
+        private delegate int GetCutVoGenderPrototype(void* a1, void* a2);
+        private readonly Hook<GetCutVoGenderPrototype> _getCutVoGenderHook;
+        
+        private readonly delegate* unmanaged<void*, int> _getCutVoLang;
 
         public string PlayerName => _clientState?.LocalPlayer?.Name.ToString();
         public ulong CurrentPlayerContentId => _clientState?.LocalContentId ?? 0;
+
+        private uint _frameworkLangCallOffset = 0;
 
         public PrefPro(
             [RequiredVersion("1.0")] SigScanner sigScanner,
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
             [RequiredVersion("1.0")] CommandManager commandManager,
-            [RequiredVersion("1.0")] ClientState clientState
-            )
+            [RequiredVersion("1.0")] ClientState clientState,
+            [RequiredVersion("1.0")] Framework framework
+        )
         {
             _pi = pluginInterface;
             _commandManager = commandManager;
             _clientState = clientState;
+            _framework = framework;
             
             _configuration = _pi.GetPluginConfig() as Configuration ?? new Configuration();
             _configuration.Initialize(_pi, this);
@@ -73,57 +83,102 @@ namespace PrefPro
                 HelpMessage = "Display the PrefPro configuration interface."
             });
 
-            string getStringStr = "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 83 B9 ?? ?? ?? ?? ?? 49 8B F9 49 8B F0 48 8B EA 48 8B D9 75 09 48 8B 01 FF 90";
-            IntPtr getStringPtr = sigScanner.ScanText(getStringStr);
+            var getStringStr = "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 83 B9 ?? ?? ?? ?? ?? 49 8B F9 49 8B F0 48 8B EA 48 8B D9 75 09 48 8B 01 FF 90";
+            var getStringPtr = sigScanner.ScanText(getStringStr);
             _getStringHook = new Hook<GetStringPrototype>(getStringPtr, GetStringDetour);
             
+            var getCutVoGender = "E8 ?? ?? ?? ?? 8B F0 85 ED 7E 43";
+            var getCutVoGenderPtr = sigScanner.ScanText(getCutVoGender);
+            _getCutVoGenderHook = new Hook<GetCutVoGenderPrototype>(getCutVoGenderPtr, GetCutVoGenderDetour);
+            
+            var getCutVoLang = "E8 ?? ?? ?? ?? 48 63 56 1C";
+            var getCutVoLangPtr = sigScanner.ScanText(getCutVoLang);
+            _getCutVoLang = (delegate* unmanaged<void*, int>) getCutVoLangPtr;
+            
+            var frameworkLangCallOffsetStr = "48 8B 88 ?? ?? ?? ?? E8 ?? ?? ?? ?? 4C 63 7E 24";
+            var frameworkLangCallOffsetPtr = sigScanner.ScanText(frameworkLangCallOffsetStr);
+            _frameworkLangCallOffset = *(uint*)(frameworkLangCallOffsetPtr + 3);
+            PluginLog.Verbose($"framework lang call offset {_frameworkLangCallOffset} {_frameworkLangCallOffset:X}");
+            
+            // TODO: Include? no idea
+            // if (frameworkLangCallOffset is < 10000 or > 14000)
+            // {
+            //     PluginLog.Error("Framework language call offset is invalid. The plugin will be disabled.");
+            //     throw new InvalidOperationException();
+            // }
+            
             _getStringHook.Enable();
+            _getCutVoGenderHook.Enable();
             
             _pi.UiBuilder.Draw += DrawUI;
             _pi.UiBuilder.OpenConfigUi += DrawConfigUI;
         }
 
+        public void Dispose()
+        {
+            _ui.Dispose();
+            
+            _getStringHook?.Disable();
+            _getStringHook?.Dispose();
+            _getCutVoGenderHook?.Disable();
+            _getCutVoGenderHook?.Dispose();
+
+            _commandManager.RemoveHandler(CommandName);
+        }
+
         private int GetStringDetour(void* unknown, byte* text, void* unknown2, void* stringStruct)
         {
-#if DEBUG
-            int len = 0;
-            byte* text2 = text;
-            while (*text2 != 0) { text2++; len++; }
-            string str = Encoding.ASCII.GetString(text, len);
-            if (filterText != "" && str.Contains(filterText))
-            {
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < len; i++)
-                    sb.Append($"{*(text + i):X} ");
+            if (_configuration.Enabled)
+                HandlePtr(ref text);
             
-                PluginLog.Log($"GS Dump  : {sb}");
-                PluginLog.Log($"GetString: {Encoding.ASCII.GetString(text, len)}");
+            return _getStringHook.Original(unknown, text, unknown2, stringStruct);
+        }
+        
+        private int GetCutVoGenderDetour(void* a1, void* a2)
+        {
+            var lang = GetCutVoLang();
+            PluginLog.Verbose($"Lang returned {lang}");
 
+            var v1 = *(int*) ((ulong)a2 + 28);
+            var v2 = 12 * lang;
+            var v3 = *(int*) ((ulong)a2 + (ulong)v1 + (ulong)v2);
+
+            if (v3 == 1)
+            {
+                PluginLog.Verbose($"[genderDetour] v3 is 1");
+                return 0;
             }
-#endif
+            
             if (_configuration.Enabled)
             {
-                HandlePtr(ref text);
+                switch (_configuration.Gender)
+                {
+                    case GenderSetting.Male:
+                        PluginLog.Verbose($"[genderDetour] returning 0");
+                        return 0;
+                    case GenderSetting.Female:
+                        PluginLog.Verbose($"[genderDetour] returning 1");
+                        return 1;
+                    case GenderSetting.Random:
+                        var ret = new Random().Next(0, 2);
+                        PluginLog.Verbose($"[genderDetour] returning {ret}");
+                        return ret;
+                    case GenderSetting.Model:
+                        var ret2 = _getCutVoGenderHook.Original(a1, a2);
+                        PluginLog.Verbose($"[genderDetour] returning {ret2}");
+                        return ret2;
+                }
             }
-#if DEBUG
-            len = 0;
-            text2 = text;
-            while (*text2 != 0) { text2++; len++; }
-            int retVal = _getStringHook.Original(unknown, text, unknown2, stringStruct);
-            str = Encoding.ASCII.GetString(text, len);
-            if (filterText != "" && str.Contains(filterText))
-            {
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < len; i++)
-                    sb.Append($"{*(text + i):X} ");
-            
-                PluginLog.Log($"GS Dump  : {sb}");
-                PluginLog.Log($"GetString: {Encoding.ASCII.GetString(text, len)}");
-            }
-            return retVal;
-#else
-            return _getStringHook.Original(unknown, text, unknown2, stringStruct);
-#endif
+
+            PluginLog.Verbose($"[genderDetour] returning 0");
+            return 0;
+        }
+
+        private int GetCutVoLang()
+        {
+            var offs = *(void**) (_framework.Address.BaseAddress + (int) _frameworkLangCallOffset);
+            PluginLog.Verbose($"GetCutVoLang: {(ulong) offs} {(ulong) offs:X}");
+            return _getCutVoLang(offs);
         }
         
         private void HandlePtr(ref byte* ptr)
@@ -297,17 +352,6 @@ namespace PrefPro
         //     for (int i = 0; i < len; i++)
         //         ptr[i] = newText[i];
         // }
-
-        public void Dispose()
-        {
-            _ui.Dispose();
-            
-            _getStringHook.Disable();
-            _getStringHook.Dispose();
-
-            _commandManager.RemoveHandler(CommandName);
-            _pi.Dispose();
-        }
 
         private void OnCommand(string command, string args)
         {

@@ -2,6 +2,8 @@
 using System;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using Dalamud.Interface;
+using Dalamud.Interface.Colors;
 
 namespace PrefPro
 {
@@ -60,17 +62,9 @@ namespace PrefPro
         {
             if (!SettingsVisible) return;
             
-#if DEBUG
-            ImGui.SetNextWindowSize(new Vector2(270, 100), ImGuiCond.FirstUseEver);
-            if (ImGui.Begin("PrefPro Config", ref _settingsVisible, ImGuiWindowFlags.AlwaysVerticalScrollbar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
-#else
-            ImGui.SetNextWindowSize(new Vector2(340 * ImGui.GetIO().FontGlobalScale, 320 * ImGui.GetIO().FontGlobalScale), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(new Vector2(340 * ImGui.GetIO().FontGlobalScale, 360 * ImGui.GetIO().FontGlobalScale), ImGuiCond.Always);
             if (ImGui.Begin("PrefPro Config", ref _settingsVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
-#endif
             {
-#if DEBUG
-                // ImGui.InputText("Filter", ref PrefPro.filterText, 32);
-#endif
                 var enabled = _configuration.Enabled;
                 var currentGender = _configuration.Gender;
                 
@@ -84,14 +78,24 @@ namespace PrefPro
                     _configuration.Save();
                 }
 
+                if (ImGui.CollapsingHeader("Developer note regarding they/them pronouns"))
+                {
+                    ImGui.TextWrapped("PrefPro currently cannot and will never have support for they/them pronouns. " +
+                                      "This is entirely due to technical limitations and the amount of work for such a feature. " +
+                                      "This would require rewriting most dialogue in the game across all languages as well as upkeep on new patches. " +
+                                      "It is simply an unreasonable amount of work.");
+                    ImGui.End();
+                    return;
+                }
+
                 ImGui.Text("For name replacement, PrefPro should use the name...");
-                ImGui.Indent(10f);
-                ImGui.PushItemWidth(105f);
+                ImGui.Indent(10f * ImGuiHelpers.GlobalScale);
+                ImGui.PushItemWidth(105f * ImGuiHelpers.GlobalScale);
                 ImGui.InputText("##newFirstName", ref _tmpFirstName, 15);
                 ImGui.SameLine();
                 ImGui.InputText("##newLastName", ref _tmpLastName, 15);
                 ImGui.PopItemWidth();
-                ImGui.PushItemWidth(20f);
+                ImGui.PushItemWidth(20f * ImGuiHelpers.GlobalScale);
                 ImGui.SameLine();
                 if (ImGui.Button("Set##prefProNameSet"))
                 {
@@ -113,11 +117,11 @@ namespace PrefPro
                     _configuration.Save();
                 }
                 ImGui.PopItemWidth();
-                ImGui.Indent(-10f);
+                ImGui.Indent(-10f * ImGuiHelpers.GlobalScale);
                 
                 ImGui.Text("When NPCs and dialogue use my full name, instead use...");
-                ImGui.Indent(10f);
-                ImGui.PushItemWidth(300f);
+                ImGui.Indent(10f * ImGuiHelpers.GlobalScale);
+                ImGui.PushItemWidth(300f * ImGuiHelpers.GlobalScale);
                 if (ImGui.BeginCombo("##fullnameCombo", GetNameOptionDescriptor(nameFull)))
                 {
                     if (ImGui.Selectable(FirstLastDesc))
@@ -131,10 +135,10 @@ namespace PrefPro
                     _configuration.Save();
                     ImGui.EndCombo();
                 }
-                ImGui.Indent(-10f);
+                ImGui.Indent(-10f * ImGuiHelpers.GlobalScale);
                 
                 ImGui.Text("When NPCs and dialogue use my first name, instead use...");
-                ImGui.Indent(10f);
+                ImGui.Indent(10f * ImGuiHelpers.GlobalScale);
                 if (ImGui.BeginCombo("##firstNameCombo", GetNameOptionDescriptor(nameFirst)))
                 {
                     if (ImGui.Selectable(FirstLastDesc))
@@ -148,10 +152,10 @@ namespace PrefPro
                     _configuration.Save();
                     ImGui.EndCombo();
                 }
-                ImGui.Indent(-10f);
+                ImGui.Indent(-10f * ImGuiHelpers.GlobalScale);
                 
                 ImGui.Text("When NPCs and dialogue use my last name, instead use...");
-                ImGui.Indent(10f);
+                ImGui.Indent(10f * ImGuiHelpers.GlobalScale);
                 if (ImGui.BeginCombo("##lastNameCombo", GetNameOptionDescriptor(nameLast)))
                 {
                     if (ImGui.Selectable(FirstLastDesc))
@@ -166,13 +170,13 @@ namespace PrefPro
                     ImGui.EndCombo();
                 }
                 ImGui.PopItemWidth();
-                ImGui.Indent(-10f);
+                ImGui.Indent(-10f * ImGuiHelpers.GlobalScale);
 
                 ImGui.TextWrapped("When NPCs and dialogue use gendered text, instead refer to me" +
                                   " as if my character is...");
 
-                ImGui.Indent(10f);
-                ImGui.PushItemWidth(140);
+                ImGui.Indent(10f * ImGuiHelpers.GlobalScale);
+                ImGui.PushItemWidth(140 * ImGuiHelpers.GlobalScale);
                 if (ImGui.BeginCombo("##prefProComboBox:", GetGenderOptionDescriptor(currentGender)))
                 {
                     if (ImGui.Selectable(MaleDesc))
@@ -187,7 +191,7 @@ namespace PrefPro
                     ImGui.EndCombo();
                 }
                 ImGui.PopItemWidth();
-                ImGui.Indent(10f);
+                ImGui.Indent(10f * ImGuiHelpers.GlobalScale);
             }
             ImGui.End();
         }
