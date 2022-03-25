@@ -136,6 +136,12 @@ namespace PrefPro
         
         private int GetCutVoGenderDetour(void* a1, void* a2)
         {
+            var originalRet = _getCutVoGenderHook.Original(a1, a2);
+            PluginLog.Verbose($"[genderDetour] original returned {originalRet}");
+
+            if (!_configuration.Enabled)
+                return originalRet;
+            
             var lang = GetCutVoLang();
             PluginLog.Verbose($"Lang returned {lang}");
 
@@ -149,29 +155,25 @@ namespace PrefPro
                 return 0;
             }
             
-            if (_configuration.Enabled)
+            switch (_configuration.Gender)
             {
-                switch (_configuration.Gender)
-                {
-                    case GenderSetting.Male:
-                        PluginLog.Verbose($"[genderDetour] returning 0");
-                        return 0;
-                    case GenderSetting.Female:
-                        PluginLog.Verbose($"[genderDetour] returning 1");
-                        return 1;
-                    case GenderSetting.Random:
-                        var ret = new Random().Next(0, 2);
-                        PluginLog.Verbose($"[genderDetour] returning {ret}");
-                        return ret;
-                    case GenderSetting.Model:
-                        var ret2 = _getCutVoGenderHook.Original(a1, a2);
-                        PluginLog.Verbose($"[genderDetour] returning {ret2}");
-                        return ret2;
-                }
+                case GenderSetting.Male:
+                    PluginLog.Verbose($"[genderDetour] returning 0");
+                    return 0;
+                case GenderSetting.Female:
+                    PluginLog.Verbose($"[genderDetour] returning 1");
+                    return 1;
+                case GenderSetting.Random:
+                    var ret = new Random().Next(0, 2);
+                    PluginLog.Verbose($"[genderDetour] returning {ret}");
+                    return ret;
+                case GenderSetting.Model:
+                    PluginLog.Verbose($"[genderDetour] returning original: {originalRet}");
+                    return originalRet;
             }
 
-            PluginLog.Verbose($"[genderDetour] returning 0");
-            return 0;
+            PluginLog.Verbose($"[genderDetour] returning original: {originalRet}");
+            return originalRet;
         }
 
         private int GetCutVoLang()
