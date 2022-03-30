@@ -61,8 +61,11 @@ namespace PrefPro
         public void DrawSettingsWindow()
         {
             if (!SettingsVisible) return;
-            
-            ImGui.SetNextWindowSize(new Vector2(340 * ImGui.GetIO().FontGlobalScale, 360 * ImGui.GetIO().FontGlobalScale), ImGuiCond.Always);
+
+            var height = 340;
+            var width = _configuration.Gender == PrefPro.GenderSetting.Random ? 390 : 360;
+            var size = new Vector2(height, width) * ImGui.GetIO().FontGlobalScale;
+            ImGui.SetNextWindowSize(size, ImGuiCond.Always);
             if (ImGui.Begin("PrefPro Config", ref _settingsVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 var enabled = _configuration.Enabled;
@@ -190,6 +193,8 @@ namespace PrefPro
                     _configuration.Save();
                     ImGui.EndCombo();
                 }
+                if (_configuration.Gender == PrefPro.GenderSetting.Random)
+                    ImGui.TextWrapped("Please note that the gender used in text may not match the gender used in voiceovers.");
                 ImGui.PopItemWidth();
                 ImGui.Indent(10f * ImGuiHelpers.GlobalScale);
             }
