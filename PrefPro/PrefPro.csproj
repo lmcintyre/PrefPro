@@ -42,6 +42,6 @@
     <Content Include="PrefPro.yaml" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DalamudPackager" Version="2.1.5" />
+    <PackageReference Include="DalamudPackager" Version="2.1.6" />
   </ItemGroup>
 </Project>
