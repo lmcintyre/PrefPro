@@ -1,5 +1,4 @@
 ﻿using Dalamud.Configuration;
-using Dalamud.Plugin;
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
@@ -89,13 +88,11 @@ namespace PrefPro
                 Configs[_prefPro.CurrentPlayerContentId] = config;
             }
         }
-
-        [NonSerialized] private DalamudPluginInterface _pluginInterface;
+        
         [NonSerialized] private PrefPro _prefPro;
 
-        public void Initialize(DalamudPluginInterface pluginInterface, PrefPro prefPro)
+        public void Initialize(PrefPro prefPro)
         {
-            _pluginInterface = pluginInterface;
             _prefPro = prefPro;
         }
 
@@ -120,7 +117,7 @@ namespace PrefPro
 
         public void Save()
         {
-            _pluginInterface.SavePluginConfig(this);
+            DalamudApi.PluginInterface.SavePluginConfig(this);
         }
     }
 }

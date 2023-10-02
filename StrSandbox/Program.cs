@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
-using Dalamud;
-using Dalamud.Data;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 
@@ -137,7 +135,7 @@ namespace StrSandbox
             return $"{newFirst} {newLast}";
         }
 
-        private static unsafe void HandlePtr(SeStringManager mgr, byte* ptr)
+        private static unsafe void HandlePtr(byte* ptr)
         {
             var byteList = new List<byte>();
             int i = 0;

@@ -3,14 +3,10 @@ using Dalamud.Plugin;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
-using Dalamud.Game;
-using Dalamud.Game.ClientState;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
-using Dalamud.IoC;
-using Dalamud.Logging;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 
 namespace PrefPro
 {
@@ -32,14 +28,9 @@ namespace PrefPro
             Model
         }
 
-        public string Name => "PrefPro";
         private const string CommandName = "/prefpro";
         
-        private readonly DalamudPluginInterface _pi;
-        private readonly CommandManager _commandManager;
-        private readonly ClientState _clientState;
         private readonly Configuration _configuration;
-        private readonly Framework _framework;
         private readonly PluginUI _ui;
         
         //reEncode[1] == 0x29 && reEncode[2] == 0x3 && reEncode[3] == 0xEB && reEncode[4] == 0x2
@@ -53,52 +44,45 @@ namespace PrefPro
         private delegate int GetCutVoGenderPrototype(void* a1, void* a2);
         private readonly Hook<GetCutVoGenderPrototype> _getCutVoGenderHook;
         
-        private readonly delegate* unmanaged<void*, int> _getCutVoLang;
+        private delegate int GetCutVoLangPrototype(void* a1);
+        private readonly GetCutVoLangPrototype _getCutVoLang;
 
-        public string PlayerName => _clientState?.LocalPlayer?.Name.ToString();
-        public ulong CurrentPlayerContentId => _clientState?.LocalContentId ?? 0;
+        public string PlayerName => DalamudApi.ClientState.LocalPlayer?.Name.ToString();
+        public ulong CurrentPlayerContentId => DalamudApi.ClientState.LocalContentId;
 
         private uint _frameworkLangCallOffset = 0;
 
-        public PrefPro(
-            [RequiredVersion("1.0")] SigScanner sigScanner,
-            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] CommandManager commandManager,
-            [RequiredVersion("1.0")] ClientState clientState,
-            [RequiredVersion("1.0")] Framework framework
+        public PrefPro(DalamudPluginInterface pi
         )
         {
-            _pi = pluginInterface;
-            _commandManager = commandManager;
-            _clientState = clientState;
-            _framework = framework;
+            DalamudApi.Initialize(pi);
             
-            _configuration = _pi.GetPluginConfig() as Configuration ?? new Configuration();
-            _configuration.Initialize(_pi, this);
+            _configuration = DalamudApi.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            _configuration.Initialize(this);
 
             _ui = new PluginUI(_configuration, this);
             
-            _commandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+            DalamudApi.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
             {
                 HelpMessage = "Display the PrefPro configuration interface."
             });
 
             var getStringStr = "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 83 B9 ?? ?? ?? ?? ?? 49 8B F9 49 8B F0 48 8B EA 48 8B D9 75 09 48 8B 01 FF 90";
-            var getStringPtr = sigScanner.ScanText(getStringStr);
-            _getStringHook = new Hook<GetStringPrototype>(getStringPtr, GetStringDetour);
+            var getStringPtr = DalamudApi.SigScanner.ScanText(getStringStr);
+            _getStringHook = DalamudApi.Hooks.HookFromAddress<GetStringPrototype>(getStringPtr, GetStringDetour);
             
             var getCutVoGender = "E8 ?? ?? ?? ?? 8B F0 85 ED 7E 43";
-            var getCutVoGenderPtr = sigScanner.ScanText(getCutVoGender);
-            _getCutVoGenderHook = new Hook<GetCutVoGenderPrototype>(getCutVoGenderPtr, GetCutVoGenderDetour);
+            var getCutVoGenderPtr = DalamudApi.SigScanner.ScanText(getCutVoGender);
+            _getCutVoGenderHook = DalamudApi.Hooks.HookFromAddress<GetCutVoGenderPrototype>(getCutVoGenderPtr, GetCutVoGenderDetour);
             
             var getCutVoLang = "E8 ?? ?? ?? ?? 48 63 56 1C";
-            var getCutVoLangPtr = sigScanner.ScanText(getCutVoLang);
-            _getCutVoLang = (delegate* unmanaged<void*, int>) getCutVoLangPtr;
+            var getCutVoLangPtr = DalamudApi.SigScanner.ScanText(getCutVoLang);
+            _getCutVoLang = Marshal.GetDelegateForFunctionPointer<GetCutVoLangPrototype>(getCutVoLangPtr);
             
             var frameworkLangCallOffsetStr = "48 8B 88 ?? ?? ?? ?? E8 ?? ?? ?? ?? 4C 63 7E 24";
-            var frameworkLangCallOffsetPtr = sigScanner.ScanText(frameworkLangCallOffsetStr);
+            var frameworkLangCallOffsetPtr = DalamudApi.SigScanner.ScanText(frameworkLangCallOffsetStr);
             _frameworkLangCallOffset = *(uint*)(frameworkLangCallOffsetPtr + 3);
-            PluginLog.Verbose($"framework lang call offset {_frameworkLangCallOffset} {_frameworkLangCallOffset:X}");
+            DalamudApi.PluginLog.Verbose($"framework lang call offset {_frameworkLangCallOffset} {_frameworkLangCallOffset:X}");
             
             // TODO: Include? no idea
             // if (frameworkLangCallOffset is < 10000 or > 14000)
@@ -110,8 +94,8 @@ namespace PrefPro
             _getStringHook.Enable();
             _getCutVoGenderHook.Enable();
             
-            _pi.UiBuilder.Draw += DrawUI;
-            _pi.UiBuilder.OpenConfigUi += DrawConfigUI;
+            DalamudApi.PluginInterface.UiBuilder.Draw += DrawUI;
+            DalamudApi.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
         }
 
         public void Dispose()
@@ -123,7 +107,7 @@ namespace PrefPro
             _getCutVoGenderHook?.Disable();
             _getCutVoGenderHook?.Dispose();
 
-            _commandManager.RemoveHandler(CommandName);
+            DalamudApi.CommandManager.RemoveHandler(CommandName);
         }
 
         private int GetStringDetour(void* unknown, byte* text, void* unknown2, void* stringStruct)
@@ -137,13 +121,13 @@ namespace PrefPro
         private int GetCutVoGenderDetour(void* a1, void* a2)
         {
             var originalRet = _getCutVoGenderHook.Original(a1, a2);
-            PluginLog.Verbose($"[genderDetour] original returned {originalRet}");
+            DalamudApi.PluginLog.Verbose($"[genderDetour] original returned {originalRet}");
 
             if (!_configuration.Enabled)
                 return originalRet;
             
             var lang = GetCutVoLang();
-            PluginLog.Verbose($"Lang returned {lang}");
+            DalamudApi.PluginLog.Verbose($"Lang returned {lang}");
 
             var v1 = *(int*) ((ulong)a2 + 28);
             var v2 = 12 * lang;
@@ -151,35 +135,35 @@ namespace PrefPro
 
             if (v3 == 1)
             {
-                PluginLog.Verbose($"[genderDetour] v3 is 1");
+                DalamudApi.PluginLog.Verbose($"[genderDetour] v3 is 1");
                 return 0;
             }
             
             switch (_configuration.Gender)
             {
                 case GenderSetting.Male:
-                    PluginLog.Verbose($"[genderDetour] returning 0");
+                    DalamudApi.PluginLog.Verbose($"[genderDetour] returning 0");
                     return 0;
                 case GenderSetting.Female:
-                    PluginLog.Verbose($"[genderDetour] returning 1");
+                    DalamudApi.PluginLog.Verbose($"[genderDetour] returning 1");
                     return 1;
                 case GenderSetting.Random:
                     var ret = new Random().Next(0, 2);
-                    PluginLog.Verbose($"[genderDetour] returning {ret}");
+                    DalamudApi.PluginLog.Verbose($"[genderDetour] returning {ret}");
                     return ret;
                 case GenderSetting.Model:
-                    PluginLog.Verbose($"[genderDetour] returning original: {originalRet}");
+                    DalamudApi.PluginLog.Verbose($"[genderDetour] returning original: {originalRet}");
                     return originalRet;
             }
 
-            PluginLog.Verbose($"[genderDetour] returning original: {originalRet}");
+            DalamudApi.PluginLog.Verbose($"[genderDetour] returning original: {originalRet}");
             return originalRet;
         }
 
         private int GetCutVoLang()
         {
-            var offs = *(void**) (_framework.Address.BaseAddress + (int) _frameworkLangCallOffset);
-            PluginLog.Verbose($"GetCutVoLang: {(ulong) offs} {(ulong) offs:X}");
+            var offs = *(void**) ((nint)Framework.Instance() + (int) _frameworkLangCallOffset);
+            DalamudApi.PluginLog.Verbose($"GetCutVoLang: {(ulong) offs} {(ulong) offs:X}");
             return _getCutVoLang(offs);
         }
         
