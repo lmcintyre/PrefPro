@@ -3,6 +3,7 @@ using System;
 using System.Numerics;
 using System.Text.RegularExpressions;
 using Dalamud.Interface.Utility;
+using PrefPro.Settings;
 
 namespace PrefPro
 {
@@ -62,13 +63,24 @@ namespace PrefPro
             if (!SettingsVisible) return;
 
             var height = 340;
-            var width = _configuration.Gender == PrefPro.GenderSetting.Random ? 390 : 360;
+            var width = _configuration.Gender == GenderSetting.Random ? 390 : 360;
             var size = new Vector2(height, width) * ImGui.GetIO().FontGlobalScale;
-            ImGui.SetNextWindowSize(size, ImGuiCond.Always);
-            if (ImGui.Begin("PrefPro Config", ref _settingsVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+            ImGui.SetNextWindowSize(size, ImGuiCond.FirstUseEver);
+            if (ImGui.Begin("PrefPro Config", ref _settingsVisible, ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 var enabled = _configuration.Enabled;
                 var currentGender = _configuration.Gender;
+                var currentRace = _configuration.Race;
+                var currentTribe = _configuration.Tribe;
+
+                if (currentRace == RaceSetting.Unknown || currentTribe == TribeSetting.Unknown)
+                {
+                    currentRace = _prefPro.PlayerRace;
+                    currentTribe = _prefPro.PlayerTribe;
+                    _configuration.Race = currentRace;
+                    _configuration.Tribe = currentTribe;
+                    _configuration.Save();
+                }
                 
                 var nameFull = _configuration.FullName;
                 var nameFirst = _configuration.FirstName;
@@ -84,12 +96,11 @@ namespace PrefPro
                 {
                     ImGui.TextWrapped("PrefPro currently cannot and will never have support for they/them pronouns. " +
                                       "This is entirely due to technical limitations and the amount of work for such a feature. " +
-                                      "This would require rewriting most dialogue in the game across all languages as well as upkeep on new patches. " +
-                                      "It is simply an unreasonable amount of work.");
+                                      "This would require rewriting most dialogue in the game across all languages as well as upkeep on new patches.");
                     ImGui.End();
                     return;
                 }
-
+                
                 ImGui.Text("For name replacement, PrefPro should use the name...");
                 ImGui.Indent(10f * ImGuiHelpers.GlobalScale);
                 ImGui.PushItemWidth(105f * ImGuiHelpers.GlobalScale);
@@ -127,13 +138,13 @@ namespace PrefPro
                 if (ImGui.BeginCombo("##fullnameCombo", GetNameOptionDescriptor(nameFull)))
                 {
                     if (ImGui.Selectable(FirstLastDesc))
-                        _configuration.FullName = PrefPro.NameSetting.FirstLast;
+                        _configuration.FullName = NameSetting.FirstLast;
                     if (ImGui.Selectable(FirstOnlyDesc))
-                        _configuration.FullName = PrefPro.NameSetting.FirstOnly;
+                        _configuration.FullName = NameSetting.FirstOnly;
                     if (ImGui.Selectable(LastOnlyDesc))
-                        _configuration.FullName = PrefPro.NameSetting.LastOnly;
+                        _configuration.FullName = NameSetting.LastOnly;
                     if (ImGui.Selectable(LastFirstDesc))
-                        _configuration.FullName = PrefPro.NameSetting.LastFirst;
+                        _configuration.FullName = NameSetting.LastFirst;
                     _configuration.Save();
                     ImGui.EndCombo();
                 }
@@ -144,13 +155,13 @@ namespace PrefPro
                 if (ImGui.BeginCombo("##firstNameCombo", GetNameOptionDescriptor(nameFirst)))
                 {
                     if (ImGui.Selectable(FirstLastDesc))
-                        _configuration.FirstName = PrefPro.NameSetting.FirstLast;
+                        _configuration.FirstName = NameSetting.FirstLast;
                     if (ImGui.Selectable(FirstOnlyDesc))
-                        _configuration.FirstName = PrefPro.NameSetting.FirstOnly;
+                        _configuration.FirstName = NameSetting.FirstOnly;
                     if (ImGui.Selectable(LastOnlyDesc))
-                        _configuration.FirstName = PrefPro.NameSetting.LastOnly;
+                        _configuration.FirstName = NameSetting.LastOnly;
                     if (ImGui.Selectable(LastFirstDesc))
-                        _configuration.FirstName = PrefPro.NameSetting.LastFirst;
+                        _configuration.FirstName = NameSetting.LastFirst;
                     _configuration.Save();
                     ImGui.EndCombo();
                 }
@@ -161,41 +172,81 @@ namespace PrefPro
                 if (ImGui.BeginCombo("##lastNameCombo", GetNameOptionDescriptor(nameLast)))
                 {
                     if (ImGui.Selectable(FirstLastDesc))
-                        _configuration.LastName = PrefPro.NameSetting.FirstLast;
+                        _configuration.LastName = NameSetting.FirstLast;
                     if (ImGui.Selectable(FirstOnlyDesc))
-                        _configuration.LastName = PrefPro.NameSetting.FirstOnly;
+                        _configuration.LastName = NameSetting.FirstOnly;
                     if (ImGui.Selectable(LastOnlyDesc))
-                        _configuration.LastName = PrefPro.NameSetting.LastOnly;
+                        _configuration.LastName = NameSetting.LastOnly;
                     if (ImGui.Selectable(LastFirstDesc))
-                        _configuration.LastName = PrefPro.NameSetting.LastFirst;
+                        _configuration.LastName = NameSetting.LastFirst;
                     _configuration.Save();
                     ImGui.EndCombo();
                 }
                 ImGui.PopItemWidth();
                 ImGui.Indent(-10f * ImGuiHelpers.GlobalScale);
 
-                ImGui.TextWrapped("When NPCs and dialogue use gendered text, instead refer to me" +
-                                  " as if my character is...");
+                ImGui.TextWrapped("When NPCs and dialogue use gendered text, refer to me as if my character is...");
 
                 ImGui.Indent(10f * ImGuiHelpers.GlobalScale);
                 ImGui.PushItemWidth(140 * ImGuiHelpers.GlobalScale);
                 if (ImGui.BeginCombo("##prefProComboBox:", GetGenderOptionDescriptor(currentGender)))
                 {
                     if (ImGui.Selectable(MaleDesc))
-                        _configuration.Gender = PrefPro.GenderSetting.Male;
+                        _configuration.Gender = GenderSetting.Male;
                     if (ImGui.Selectable(FemaleDesc))
-                        _configuration.Gender = PrefPro.GenderSetting.Female;
+                        _configuration.Gender = GenderSetting.Female;
                     if (ImGui.Selectable(RandomDesc))
-                        _configuration.Gender = PrefPro.GenderSetting.Random;
+                        _configuration.Gender = GenderSetting.Random;
                     if (ImGui.Selectable(ModelDesc))
-                        _configuration.Gender = PrefPro.GenderSetting.Model;
+                        _configuration.Gender = GenderSetting.Model;
                     _configuration.Save();
                     ImGui.EndCombo();
                 }
-                if (_configuration.Gender == PrefPro.GenderSetting.Random)
+                if (_configuration.Gender == GenderSetting.Random)
                     ImGui.TextWrapped("Please note that the gender used in text may not match the gender used in voiceovers.");
-                ImGui.PopItemWidth();
+                ImGui.Indent(-10f * ImGuiHelpers.GlobalScale);
+                
+                ImGui.TextWrapped("When NPCs and dialogue refer to my race, refer to me as if my character is...");
+
                 ImGui.Indent(10f * ImGuiHelpers.GlobalScale);
+                ImGui.PushItemWidth(140 * ImGuiHelpers.GlobalScale);
+                if (ImGui.BeginCombo("##raceComboBox", GetRaceOptionDescriptor(currentRace)))
+                {
+                    var values = Enum.GetValues<RaceSetting>();
+                    for (int i = 1; i < values.Length; i++)
+                    {
+                        var value = values[i];
+                        if (ImGui.Selectable(GetRaceOptionDescriptor(value)))
+                        {
+                            _configuration.Race = value;
+                            _configuration.Tribe = (TribeSetting) (i * 2 - 1);
+                            _configuration.Save();
+                        }
+                    }
+                    ImGui.EndCombo();
+                }
+                ImGui.Indent(-10f * ImGuiHelpers.GlobalScale);
+                
+                ImGui.TextWrapped("When NPCs and dialogue refer to my tribe, refer to me as if my character is...");
+
+                ImGui.Indent(10f * ImGuiHelpers.GlobalScale);
+                ImGui.PushItemWidth(200 * ImGuiHelpers.GlobalScale);
+                if (ImGui.BeginCombo("##tribeComboBox", GetTribeOptionDescriptor(currentTribe)))
+                {
+                    var values = Enum.GetValues<TribeSetting>();
+                    for (int i = 1; i < values.Length; i++)
+                    {
+                        var value = values[i];
+                        if (ImGui.Selectable(GetTribeOptionDescriptor(value)))
+                        {
+                            _configuration.Tribe = value;
+                            _configuration.Save();
+                        }
+                    }
+                    ImGui.EndCombo();
+                }
+                ImGui.PopItemWidth();
+                ImGui.Indent(-10f * ImGuiHelpers.GlobalScale);
             }
             ImGui.End();
         }
@@ -220,27 +271,67 @@ namespace PrefPro
             return $"{newFirst} {newLast}";
         }
 
-        private string GetNameOptionDescriptor(PrefPro.NameSetting setting)
+        private string GetNameOptionDescriptor(NameSetting setting)
         {
             return setting switch
             {
-                PrefPro.NameSetting.FirstLast => FirstLastDesc,
-                PrefPro.NameSetting.FirstOnly => FirstOnlyDesc,
-                PrefPro.NameSetting.LastOnly => LastOnlyDesc,
-                PrefPro.NameSetting.LastFirst => LastFirstDesc,
+                NameSetting.FirstLast => FirstLastDesc,
+                NameSetting.FirstOnly => FirstOnlyDesc,
+                NameSetting.LastOnly => LastOnlyDesc,
+                NameSetting.LastFirst => LastFirstDesc,
                 _ => ""
             };
         }
 
-        private string GetGenderOptionDescriptor(PrefPro.GenderSetting setting)
+        private string GetGenderOptionDescriptor(GenderSetting setting)
         {
             return setting switch
             {
-                PrefPro.GenderSetting.Male => MaleDesc,
-                PrefPro.GenderSetting.Female => FemaleDesc,
-                PrefPro.GenderSetting.Random => RandomDesc,
-                PrefPro.GenderSetting.Model => ModelDesc,
+                GenderSetting.Male => MaleDesc,
+                GenderSetting.Female => FemaleDesc,
+                GenderSetting.Random => RandomDesc,
+                GenderSetting.Model => ModelDesc,
                 _ => ""
+            };
+        }
+        
+        private string GetRaceOptionDescriptor(RaceSetting setting)
+        {
+            return setting switch
+            {
+                RaceSetting.Hyur => "Hyur",
+                RaceSetting.Elezen => "Elezen",
+                RaceSetting.Lalafell => "Lalafell",
+                RaceSetting.Miqote => "Miqo'te",
+                RaceSetting.Roegadyn => "Roegadyn",
+                RaceSetting.AuRa => "Au Ra",
+                RaceSetting.Hrothgar => "Hrothgar",
+                RaceSetting.Viera => "Viera",
+                _ => "",
+            };
+        }
+
+        private string GetTribeOptionDescriptor(TribeSetting setting)
+        {
+            return setting switch
+            {
+                TribeSetting.Midlander => "Midlander",
+                TribeSetting.Highlander => "Highlander",
+                TribeSetting.Wildwood => "Wildwood",
+                TribeSetting.Duskwight => "Duskwight",
+                TribeSetting.Plainsfolk => "Plainsfolk",
+                TribeSetting.Dunesfolk => "Dunesfolk",
+                TribeSetting.SeekerOfTheSun => "Seeker of the Sun",
+                TribeSetting.KeeperOfTheMoon => "Keeper of the Moon",
+                TribeSetting.SeaWolf => "Sea Wolf",
+                TribeSetting.Hellsguard => "Hellsguard",
+                TribeSetting.Raen => "Raen",
+                TribeSetting.Xaela => "Xaela",
+                TribeSetting.Helions => "Helions",
+                TribeSetting.TheLost => "The Lost",
+                TribeSetting.Rava => "Rava",
+                TribeSetting.Veena => "Veena",
+                _ => "",
             };
         }
     }

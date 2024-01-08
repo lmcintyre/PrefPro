@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
-    <PluginVersion>1.2.0.7</PluginVersion>
+    <PluginVersion>1.2.1.0</PluginVersion>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -47,6 +47,10 @@
     </Reference>
     <Reference Include="FFXIVClientStructs">
       <HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Iced">
+      <HintPath>$(DalamudLibPath)Iced.dll</HintPath>
       <Private>False</Private>
     </Reference>
 

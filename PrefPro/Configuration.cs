@@ -1,7 +1,9 @@
 ﻿using Dalamud.Configuration;
 using System;
 using System.Collections.Generic;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Newtonsoft.Json;
+using PrefPro.Settings;
 
 namespace PrefPro
 {
@@ -14,10 +16,12 @@ namespace PrefPro
         {
             public bool Enabled;
             public string Name;
-            public PrefPro.NameSetting FullName;
-            public PrefPro.NameSetting FirstName;
-            public PrefPro.NameSetting LastName;
-            public PrefPro.GenderSetting Gender;
+            public NameSetting FullName;
+            public NameSetting FirstName;
+            public NameSetting LastName;
+            public GenderSetting Gender;
+            public RaceSetting Race;
+            public TribeSetting Tribe;
         }
 
         public Dictionary<ulong, ConfigHolder> Configs { get; set; } = new Dictionary<ulong, ConfigHolder>();
@@ -45,7 +49,7 @@ namespace PrefPro
             }
         }
         [JsonIgnore]
-        public PrefPro.NameSetting FullName
+        public NameSetting FullName
         {
             get => GetOrDefault().FullName;
             set
@@ -56,7 +60,7 @@ namespace PrefPro
             }
         }
         [JsonIgnore]
-        public PrefPro.NameSetting FirstName
+        public NameSetting FirstName
         {
             get => GetOrDefault().FirstName;
             set
@@ -67,7 +71,7 @@ namespace PrefPro
             }
         }
         [JsonIgnore]
-        public PrefPro.NameSetting LastName
+        public NameSetting LastName
         {
             get => GetOrDefault().LastName;
             set
@@ -78,7 +82,7 @@ namespace PrefPro
             }
         }
         [JsonIgnore]
-        public PrefPro.GenderSetting Gender
+        public GenderSetting Gender
         {
             get => GetOrDefault().Gender;
             set
@@ -87,6 +91,50 @@ namespace PrefPro
                 config.Gender = value;
                 Configs[_prefPro.CurrentPlayerContentId] = config;
             }
+        }
+        [JsonIgnore]
+        public RaceSetting Race
+        {
+            get => GetOrDefault().Race;
+            set
+            {
+                var config = GetOrDefault();
+                config.Race = value;
+                Configs[_prefPro.CurrentPlayerContentId] = config;
+            }
+        }
+        [JsonIgnore]
+        public TribeSetting Tribe
+        {
+            get => GetOrDefault().Tribe;
+            set
+            {
+                var config = GetOrDefault();
+                config.Tribe = value;
+                Configs[_prefPro.CurrentPlayerContentId] = config;
+            }
+        }
+        
+        public int GetGender()
+        {
+            switch (Gender)
+            {
+                case GenderSetting.Male:
+                    DalamudApi.PluginLog.Verbose($"[GetGender] returning 0");
+                    return 0;
+                case GenderSetting.Female:
+                    DalamudApi.PluginLog.Verbose($"[GetGender] returning 1");
+                    return 1;
+                case GenderSetting.Random:
+                    var ret = new Random().Next(0, 2);
+                    DalamudApi.PluginLog.Verbose($"[GetGender] returning {ret}");
+                    return ret;
+                case GenderSetting.Model:
+                    var modelGender = DalamudApi.ClientState.LocalPlayer?.Customize[(int)CustomizeIndex.Gender] ?? 0;    
+                    DalamudApi.PluginLog.Verbose($"[GetGender] returning model gender: {modelGender}");
+                    return modelGender;
+            }
+            return 0;
         }
         
         [NonSerialized] private PrefPro _prefPro;
@@ -104,10 +152,10 @@ namespace PrefPro
                 var ch = new ConfigHolder
                 {
                     Name = _prefPro.PlayerName,
-                    FullName = PrefPro.NameSetting.FirstLast,
-                    FirstName = PrefPro.NameSetting.FirstOnly,
-                    LastName = PrefPro.NameSetting.LastOnly,
-                    Gender = PrefPro.GenderSetting.Model,
+                    FullName = NameSetting.FirstLast,
+                    FirstName = NameSetting.FirstOnly,
+                    LastName = NameSetting.LastOnly,
+                    Gender = GenderSetting.Model,
                     Enabled = false
                 };
                 return ch;
