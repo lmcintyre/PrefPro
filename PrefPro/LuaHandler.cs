@@ -9,13 +9,15 @@ public unsafe class LuaHandler : IDisposable
 {
 	public delegate nuint LuaFunction(nuint a1);
 
-	private readonly Hook<LuaFunction> _getRace;
-	private readonly Hook<LuaFunction> _getSex;
-	private readonly Hook<LuaFunction> _getTribe;
+	private Hook<LuaFunction> _getRace;
+	private Hook<LuaFunction> _getSex;
+	private Hook<LuaFunction> _getTribe;
 
-	private readonly byte* _luaRacePtr;
-	private readonly byte* _luaSexPtr;
-	private readonly byte* _luaTribePtr;
+	private byte* _luaRacePtr;
+	private byte* _luaSexPtr;
+	private byte* _luaTribePtr;
+
+	private bool _initialized = false;
 
 	private readonly Configuration _configuration;
 	
@@ -25,34 +27,43 @@ public unsafe class LuaHandler : IDisposable
 		
 		try
 		{
-			var raceFunctionAddress = GetAddress("return Pc.GetRace");
-			var sexFunctionAddress = GetAddress("return Pc.GetSex");
-			var tribeFunctionAddress = GetAddress("return Pc.GetTribe");
-			
-			_getRace = DalamudApi.Hooks.HookFromAddress<LuaFunction>(raceFunctionAddress, RaceFunctionDetour);
-			_getSex = DalamudApi.Hooks.HookFromAddress<LuaFunction>(sexFunctionAddress, SexFunctionDetour);
-			_getTribe = DalamudApi.Hooks.HookFromAddress<LuaFunction>(tribeFunctionAddress, TribeFunctionDetour);
-
-			_luaRacePtr = (byte*)CodeUtil.GetStaticAddressFromPtr(raceFunctionAddress + 0x30);
-			_luaSexPtr = (byte*)CodeUtil.GetStaticAddressFromPtr(sexFunctionAddress + 0x30);
-			_luaTribePtr = (byte*)CodeUtil.GetStaticAddressFromPtr(tribeFunctionAddress + 0x30);
-			
-			DalamudApi.PluginLog.Debug($"[LuaHandler] Race function address: {raceFunctionAddress:X}");
-			DalamudApi.PluginLog.Debug($"[LuaHandler] Sex function address: {sexFunctionAddress:X}");
-			DalamudApi.PluginLog.Debug($"[LuaHandler] Tribe function address: {tribeFunctionAddress:X}");
-
-			DalamudApi.PluginLog.Debug($"[LuaHandler] Race data address: {(nint) _luaRacePtr:X}");
-			DalamudApi.PluginLog.Debug($"[LuaHandler] Sex data address: {(nint) _luaSexPtr:X}");
-			DalamudApi.PluginLog.Debug($"[LuaHandler] Tribe data address: {(nint) _luaTribePtr:X}");
-			
-			_getRace.Enable();
-			_getSex.Enable();
-			_getTribe.Enable();
+			Initialize();
 		}
 		catch (Exception e)
 		{
 			DalamudApi.PluginLog.Error(e.ToString());
 		}
+	}
+
+	private void Initialize()
+	{
+		if (_initialized) return;
+		
+		var raceFunctionAddress = GetAddress("return Pc.GetRace");
+		var sexFunctionAddress = GetAddress("return Pc.GetSex");
+		var tribeFunctionAddress = GetAddress("return Pc.GetTribe");
+			
+		_getRace = DalamudApi.Hooks.HookFromAddress<LuaFunction>(raceFunctionAddress, RaceFunctionDetour);
+		_getSex = DalamudApi.Hooks.HookFromAddress<LuaFunction>(sexFunctionAddress, SexFunctionDetour);
+		_getTribe = DalamudApi.Hooks.HookFromAddress<LuaFunction>(tribeFunctionAddress, TribeFunctionDetour);
+
+		_luaRacePtr = (byte*)CodeUtil.GetStaticAddressFromPtr(raceFunctionAddress + 0x30);
+		_luaSexPtr = (byte*)CodeUtil.GetStaticAddressFromPtr(sexFunctionAddress + 0x30);
+		_luaTribePtr = (byte*)CodeUtil.GetStaticAddressFromPtr(tribeFunctionAddress + 0x30);
+			
+		DalamudApi.PluginLog.Debug($"[LuaHandler] Race function address: {raceFunctionAddress:X}");
+		DalamudApi.PluginLog.Debug($"[LuaHandler] Sex function address: {sexFunctionAddress:X}");
+		DalamudApi.PluginLog.Debug($"[LuaHandler] Tribe function address: {tribeFunctionAddress:X}");
+
+		DalamudApi.PluginLog.Debug($"[LuaHandler] Race data address: {(nint) _luaRacePtr:X}");
+		DalamudApi.PluginLog.Debug($"[LuaHandler] Sex data address: {(nint) _luaSexPtr:X}");
+		DalamudApi.PluginLog.Debug($"[LuaHandler] Tribe data address: {(nint) _luaTribePtr:X}");
+			
+		_getRace.Enable();
+		_getSex.Enable();
+		_getTribe.Enable();
+
+		_initialized = true;
 	}
 
 	public void Dispose()
@@ -74,6 +85,7 @@ public unsafe class LuaHandler : IDisposable
 
 	private nuint RaceFunctionDetour(nuint a1)
 	{
+		Initialize();
 		var oldRace = *_luaRacePtr;
 		*_luaRacePtr = (byte)_configuration.Race;
 		DalamudApi.PluginLog.Debug($"[RaceFunctionDetour] oldRace: {oldRace} race: {(byte)_configuration.Race}");
@@ -84,6 +96,7 @@ public unsafe class LuaHandler : IDisposable
 
 	private nuint SexFunctionDetour(nuint a1)
 	{
+		Initialize();
 		var oldSex = *_luaSexPtr;
 		*_luaSexPtr = (byte)_configuration.GetGender();
 		DalamudApi.PluginLog.Debug($"[SexFunctionDetour] oldSex: {oldSex} sex: {(byte)_configuration.GetGender()}");
@@ -94,6 +107,7 @@ public unsafe class LuaHandler : IDisposable
 
 	private nuint TribeFunctionDetour(nuint a1)
 	{
+		Initialize();
 		var oldTribe = *_luaTribePtr;
 		*_luaTribePtr = (byte)_configuration.Tribe;
 		DalamudApi.PluginLog.Debug($"[TribeFunctionDetour] oldTribe: {oldTribe} sex: {(byte)_configuration.Tribe}");
