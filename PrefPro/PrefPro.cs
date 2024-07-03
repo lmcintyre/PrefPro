@@ -50,7 +50,7 @@ public unsafe class PrefPro : IDalamudPlugin
     private uint _frameworkLangCallOffset = 0;
     private LuaHandler _luaHandler;
 
-    public PrefPro(DalamudPluginInterface pi
+    public PrefPro(IDalamudPluginInterface pi
     )
     {
         DalamudApi.Initialize(pi);
@@ -69,11 +69,11 @@ public unsafe class PrefPro : IDalamudPlugin
         var getStringPtr = DalamudApi.SigScanner.ScanText(getStringStr);
         _getStringHook = DalamudApi.Hooks.HookFromAddress<GetStringPrototype>(getStringPtr, GetStringDetour);
             
-        var getCutVoGender = "E8 ?? ?? ?? ?? 8B F0 85 ED 7E 43";
+        var getCutVoGender = "E8 ?? ?? ?? ?? 49 8B 17 85 DB";
         var getCutVoGenderPtr = DalamudApi.SigScanner.ScanText(getCutVoGender);
         _getCutVoGenderHook = DalamudApi.Hooks.HookFromAddress<GetCutVoGenderPrototype>(getCutVoGenderPtr, GetCutVoGenderDetour);
             
-        var getCutVoLang = "E8 ?? ?? ?? ?? 48 63 56 1C";
+        var getCutVoLang = "E8 ?? ?? ?? ?? 49 63 56 1C";
         var getCutVoLangPtr = DalamudApi.SigScanner.ScanText(getCutVoLang);
         _getCutVoLang = Marshal.GetDelegateForFunctionPointer<GetCutVoLangPrototype>(getCutVoLangPtr);
 
@@ -81,10 +81,10 @@ public unsafe class PrefPro : IDalamudPlugin
         var getLuaVarPtr = DalamudApi.SigScanner.ScanText(getLuaVar);
         _getLuaVarHook = DalamudApi.Hooks.HookFromAddress<GetLuaVarPrototype>(getLuaVarPtr, GetLuaVarDetour);
             
-        var frameworkLangCallOffsetStr = "48 8B 88 ?? ?? ?? ?? E8 ?? ?? ?? ?? 4C 63 7E 24";
-        var frameworkLangCallOffsetPtr = DalamudApi.SigScanner.ScanText(frameworkLangCallOffsetStr);
-        _frameworkLangCallOffset = *(uint*)(frameworkLangCallOffsetPtr + 3);
-        DalamudApi.PluginLog.Verbose($"framework lang call offset {_frameworkLangCallOffset} {_frameworkLangCallOffset:X}");
+        // var frameworkLangCallOffsetStr = "48 8B 88 ?? ?? ?? ?? E8 ?? ?? ?? ?? 4C 63 7E 24";
+        // var frameworkLangCallOffsetPtr = DalamudApi.SigScanner.ScanText(frameworkLangCallOffsetStr);
+        // _frameworkLangCallOffset = *(uint*)(frameworkLangCallOffsetPtr + 3);
+        // DalamudApi.PluginLog.Verbose($"framework lang call offset {_frameworkLangCallOffset} {_frameworkLangCallOffset:X}");
 
         _luaHandler = new LuaHandler(_configuration);
 
@@ -209,9 +209,9 @@ public unsafe class PrefPro : IDalamudPlugin
 
     private int GetCutVoLang()
     {
-        var offs = *(void**) ((nint)Framework.Instance() + (int) _frameworkLangCallOffset);
-        DalamudApi.PluginLog.Verbose($"[GetCutVoLang] {(ulong) offs} {(ulong) offs:X}");
-        return _getCutVoLang(offs);
+        // var offs = *(void**) ((nint)Framework.Instance() + (int) _frameworkLangCallOffset);
+        // DalamudApi.PluginLog.Verbose($"[GetCutVoLang] {(ulong) offs} {(ulong) offs:X}");
+        return _getCutVoLang(Framework.Instance()->EnvironmentManager);
     }
     
     /**

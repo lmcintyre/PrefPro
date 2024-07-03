@@ -4,6 +4,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Lumina;
+using Lumina.Excel.GeneratedSheets;
+using PrefPro;
 
 namespace StrSandbox
 {
@@ -11,6 +14,10 @@ namespace StrSandbox
     {
         private static bool male = true;
         private static string playerName = "Not Perchbird";
+        private static int race = 1;
+        
+        private static readonly byte[] RaceIfBytes = {0x02, 0x2C, 0x0D, 0xFF, 0x07, 0x02, 0x29, 0x03, 0xEB, 0x02, 0x03, 0xFF, 0x02, 0x20, 0x03, 0x03};
+
         
         // Paste a dump here, and write a function to handle what you want
         private static byte[] test = new byte[]
@@ -85,11 +92,58 @@ namespace StrSandbox
             0x75, 0x72, 0x6E, 0x65, 0x64, 0x20, 0x74, 0x6F, 0x20, 0x6F, 0x70, 0x74, 0x69, 0x6D, 0x61, 0x6C, 0x20, 0x6C,
             0x65, 0x76, 0x65, 0x6C, 0x73, 0x2E, 0x00
         };
-
-        static unsafe void Main1(string[] args)
+        
+        // gameData.GetExcelSheet<MountTransient>().GetRow(99).DescriptionEnhanced;
+        private static byte[] raceSwitchTest =
         {
-            var toTest = omegaFullNameCrash;
-            // SeStringManager mgr = new SeStringManager(new DataManager(ClientLanguage.English));
+            0x55, 0x6E, 0x6C, 0x69, 0x6B, 0x65, 0x20, 0x68, 0x69, 0x73, 0x20, 0x77, 0x69, 0x6C, 0x64, 0x20, 0x63,
+            0x6F, 0x75, 0x73, 0x69, 0x6E, 0x73, 0x2C, 0x20, 0x02, 0x09, 0x68, 0xE9, 0x48, 0xFF, 0x07, 0x4B, 0x6F,
+            0x63, 0x68, 0x61, 0x62, 0xFF, 0x18, 0x02, 0x08, 0x14, 0xE9, 0x05, 0xFF, 0x07, 0x4B, 0x6F, 0x63, 0x68,
+            0x61, 0x62, 0xFF, 0x08, 0x50, 0x6F, 0x6C, 0x61, 0x72, 0x69, 0x73, 0x03, 0xFF, 0x08, 0x50, 0x66, 0x65,
+            0x72, 0x6B, 0x61, 0x64, 0xFF, 0x07, 0x4B, 0x6F, 0x63, 0x68, 0x61, 0x62, 0xFF, 0x08, 0x50, 0x6F, 0x6C,
+            0x61, 0x72, 0x69, 0x73, 0xFF, 0x18, 0x02, 0x08, 0x14, 0xE9, 0x05, 0xFF, 0x07, 0x4B, 0x6F, 0x63, 0x68,
+            0x61, 0x62, 0xFF, 0x08, 0x50, 0x6F, 0x6C, 0x61, 0x72, 0x69, 0x73, 0x03, 0xFF, 0x08, 0x50, 0x6F, 0x6C,
+            0x61, 0x72, 0x69, 0x73, 0xFF, 0x07, 0x4B, 0x6F, 0x63, 0x68, 0x61, 0x62, 0x03, 0x20, 0x74, 0x68, 0x65,
+            0x20, 0x62, 0x65, 0x61, 0x72, 0x20, 0x63, 0x61, 0x6E, 0x20, 0x62, 0x65, 0x20, 0x72, 0x65, 0x6C, 0x69,
+            0x65, 0x64, 0x20, 0x75, 0x70, 0x6F, 0x6E, 0x20, 0x74, 0x6F, 0x20, 0x64, 0x65, 0x6C, 0x69, 0x67, 0x68,
+            0x74, 0x20, 0x66, 0x6F, 0x6C, 0x6B, 0x20, 0x72, 0x61, 0x74, 0x68, 0x65, 0x72, 0x20, 0x74, 0x68, 0x61,
+            0x6E, 0x20, 0x74, 0x65, 0x61, 0x72, 0x20, 0x74, 0x68, 0x65, 0x6D, 0x20, 0x61, 0x70, 0x61, 0x72, 0x74,
+            0x2E, 0x20, 0x52, 0x61, 0x69, 0x73, 0x65, 0x64, 0x20, 0x66, 0x72, 0x6F, 0x6D, 0x20, 0x61, 0x20, 0x63,
+            0x75, 0x62, 0x20, 0x62, 0x79, 0x20, 0x43, 0x65, 0x6C, 0x65, 0x62, 0x72, 0x61, 0x6E, 0x74, 0x20, 0x42,
+            0x61, 0x65, 0x6E, 0x66, 0x61, 0x65, 0x6C, 0x64, 0x2C, 0x20, 0x68, 0x65, 0x20, 0x68, 0x61, 0x73, 0x20,
+            0x6D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x65, 0x64, 0x20, 0x74, 0x68, 0x65, 0x20, 0x61, 0x72, 0x74, 0x20,
+            0x6F, 0x66, 0x20, 0x53, 0x74, 0x61, 0x72, 0x62, 0x75, 0x72, 0x73, 0x74, 0x2D, 0x6C, 0x6F, 0x62, 0x62,
+            0x69, 0x6E, 0x67, 0x2C, 0x20, 0x61, 0x20, 0x73, 0x6B, 0x69, 0x6C, 0x6C, 0x20, 0x74, 0x68, 0x61, 0x74,
+            0x20, 0x70, 0x72, 0x6F, 0x76, 0x65, 0x64, 0x20, 0x75, 0x73, 0x65, 0x66, 0x75, 0x6C, 0x20, 0x69, 0x6E,
+            0x20, 0x68, 0x75, 0x6E, 0x74, 0x69, 0x6E, 0x67, 0x20, 0x64, 0x6F, 0x77, 0x6E, 0x20, 0x74, 0x68, 0x69,
+            0x65, 0x76, 0x69, 0x6E, 0x67, 0x20, 0x74, 0x72, 0x65, 0x61, 0x6E, 0x74, 0x73, 0x2E,
+        };
+
+        // gameData.GetExcelSheet<DefaultTalk>().GetRow(593952).Text[0];
+        private static byte[] raceIfTest =
+        {
+            0x49, 0x27, 0x64, 0x20, 0x62, 0x65, 0x20, 0x63, 0x61, 0x72, 0x65, 0x66, 0x75, 0x6C, 0x20, 0x6F, 0x75,
+            0x74, 0x20, 0x74, 0x68, 0x65, 0x72, 0x65, 0x20, 0x69, 0x66, 0x20, 0x49, 0x20, 0x77, 0x65, 0x72, 0x65,
+            0x20, 0x79, 0x6F, 0x75, 0x2E, 0x20, 0x02, 0x08, 0xF0, 0xD9, 0xE4, 0xE9, 0x48, 0x04, 0xFF, 0x76, 0x41,
+            0x20, 0x02, 0x08, 0x0F, 0xE9, 0x05, 0xFF, 0x06, 0x77, 0x6F, 0x6D, 0x61, 0x6E, 0xFF, 0x04, 0x6D, 0x61,
+            0x6E, 0x03, 0x20, 0x79, 0x6F, 0x75, 0x72, 0x20, 0x73, 0x69, 0x7A, 0x65, 0xE2, 0x94, 0x80, 0x74, 0x68,
+            0x65, 0x20, 0x62, 0x65, 0x61, 0x73, 0x74, 0x73, 0x20, 0x6F, 0x75, 0x74, 0x20, 0x74, 0x68, 0x65, 0x72,
+            0x65, 0x20, 0x77, 0x6F, 0x75, 0x6C, 0x64, 0x20, 0x73, 0x77, 0x61, 0x6C, 0x6C, 0x6F, 0x77, 0x20, 0x79,
+            0x6F, 0x75, 0x20, 0x77, 0x68, 0x6F, 0x6C, 0x65, 0x2E, 0x20, 0x41, 0x6E, 0x64, 0x20, 0x79, 0x6F, 0x75,
+            0x20, 0x77, 0x6F, 0x75, 0x6C, 0x64, 0x6E, 0x27, 0x74, 0x20, 0x62, 0x65, 0x20, 0x74, 0x68, 0x65, 0x20,
+            0x66, 0x69, 0x72, 0x73, 0x74, 0x2C, 0x20, 0x65, 0x69, 0x74, 0x68, 0x65, 0x72, 0x2E, 0xFF, 0x5D, 0x54, 
+            0x68, 0x65, 0x72, 0x65, 0x20, 0x61, 0x72, 0x65, 0x20, 0x62, 0x65, 0x61, 0x73, 0x74, 0x73, 0x20, 0x6F, 
+            0x75, 0x74, 0x20, 0x74, 0x68, 0x65, 0x72, 0x65, 0x20, 0x62, 0x69, 0x67, 0x20, 0x65, 0x6E, 0x6F, 0x75, 
+            0x67, 0x68, 0x20, 0x74, 0x6F, 0x20, 0x73, 0x77, 0x61, 0x6C, 0x6C, 0x6F, 0x77, 0x20, 0x61, 0x20, 0x6D,
+            0x61, 0x6E, 0x20, 0x77, 0x68, 0x6F, 0x6C, 0x65, 0x2E, 0x20, 0x57, 0x65, 0x6C, 0x6C, 0x2C, 0x20, 0x61,
+            0x20, 0x6D, 0x61, 0x6E, 0x20, 0x6D, 0x79, 0x20, 0x73, 0x69, 0x7A, 0x65, 0x2C, 0x20, 0x61, 0x74, 0x20,
+            0x6C, 0x65, 0x61, 0x73, 0x74, 0x2E, 0x03, 
+        };
+
+        // public static unsafe void TestString()
+        public static unsafe void Main()
+        {
+            var toTest = raceIfTest;
             
             fixed (byte* text = toTest)
             {
@@ -97,24 +151,41 @@ namespace StrSandbox
                 // PrintStackedView(toTest, 50, 50);
 
                 // ProcessGenderedParam(text);
-                // HandlePtr(mgr, text);
+                HandlePtr(text);
 
                 PrintStackedView(text);
                 // PrintStackedView(toTest, 50, 50);
             }
         }
-
-        private static string lastValid = "";
-        public static unsafe void Main(string[] args)
+        
+        public static void GetStringFromGame()
+        // public static void Main()
         {
-            while (true)
+            // var toTest = 
+            var gamePath = @"C:\Program Files (x86)\SquareEnix\FINAL FANTASY XIV - A Realm Reborn\game\sqpack\";
+            var gameData = new GameData(gamePath);
+
+            // var text = gameData.GetExcelSheet<MountTransient>().GetRow(99).DescriptionEnhanced;
+            // var text = gameData.GetExcelSheet<DefaultTalk>().GetRow(593952).Text[0];
+            var text = gameData.Excel.GetSheetRaw("custom/006/CtsMycResistanceLevelUp_00681").GetRow(0).ReadColumnRaw(1) as Lumina.Text.SeString;
+                
+            var data = text.RawData;
+            var str = text.ToString();
+            Console.WriteLine(str);
+            for (int i = 0; i < data.Length; i++)
             {
-                var inStr = Console.ReadLine().Trim();
-                lastValid = SanitizeName(inStr.Split(' ')[0], inStr.Split(' ')[1]);
-                Console.WriteLine(lastValid);
+                Console.Write($"{data[i]:X2} ");
             }
+            Console.WriteLine();
+            
+            for (int i = 0; i < data.Length; i++)
+            {
+                Console.Write($"0x{data[i]:X2}, ");
+            }
+            Console.WriteLine();
         }
 
+        private static string lastValid = "";
         private static string SanitizeName(string first, string last)
         {
             string newFirst = first;
@@ -152,7 +223,8 @@ namespace StrSandbox
                 {
                     // Add handlers here
                     parsed.Payloads[payloadIndex] = HandleGenderPayload(parsed.Payloads[payloadIndex]);
-                    parsed.Payloads[payloadIndex] = TestNamePayload(parsed.Payloads[payloadIndex]);
+                    // parsed.Payloads[payloadIndex] = TestNamePayload(parsed.Payloads[payloadIndex]);
+                    parsed.Payloads[payloadIndex] = HandleIfRacePayload(parsed.Payloads[payloadIndex]);
                 }
             }
             var encoded = parsed.Encode();
@@ -163,30 +235,62 @@ namespace StrSandbox
 
             ptr[j] = 0;
         }
-
+        
         private static Payload HandleGenderPayload(Payload thisPayload)
         {
             byte[] reEncode = thisPayload.Encode();
-            if (reEncode[0] == 2 && reEncode[1] == 8 && reEncode[3] == 0xE9 && reEncode[4] == 5)
-            {
-                int femaleStart = 7;
-                int femaleLen = reEncode[6] - 1;
-                int maleStart = femaleStart + femaleLen + 2;
-                int maleLen = reEncode[maleStart - 1] - 1;
-
-                int len = male ? maleLen : femaleLen;
-                int start = male ? maleStart : femaleStart;
-
-                byte[] newTextBytes = new byte[len];
-                for (int c = 0; c < newTextBytes.Length; c++)
-                    newTextBytes[c] = reEncode[start + c];
-
-                return new TextPayload(Encoding.ASCII.GetString(newTextBytes));
-            }
+            // We have to compare bytes here because there is a wildcard in the middle
+            if (reEncode[1] != 8 || reEncode[3] != 0xE9 || reEncode[4] != 5)
+                return thisPayload;
             
-            return thisPayload;
-        }
+            int femaleStart = 7;
+            int femaleLen = reEncode[6] - 1;
+            int maleStart = femaleStart + femaleLen + 2;
+            int maleLen = reEncode[maleStart - 1] - 1;
+            
+            int len = male ? maleLen : femaleLen;
+            int start = male ? maleStart : femaleStart;
 
+            byte[] newTextBytes = new byte[len];
+            for (int c = 0; c < newTextBytes.Length; c++)
+                newTextBytes[c] = reEncode[start + c];
+
+            return new ActuallyRawPayload(newTextBytes);
+        }
+        
+        private static Payload HandleIfRacePayload(Payload thisPayload)
+        {
+            byte[] reEncode = thisPayload.Encode();
+            // We have to compare bytes here because there is a wildcard in the middle
+            if (reEncode[1] != 8 || reEncode[3] != 0xE9 || reEncode[4] != 5)
+                return thisPayload;
+            
+            int femaleStart = 7;
+            int femaleLen = reEncode[6] - 1;
+            int maleStart = femaleStart + femaleLen + 2;
+            int maleLen = reEncode[maleStart - 1] - 1;
+
+            bool male = false;
+            // if (_configuration.Gender == PrefPro.PrefPro.GenderSetting.Random)
+            //     male = new Random().Next(0, 2) == 0;
+            // else
+            //     male = _configuration.Gender == PrefPro.PrefPro.GenderSetting.Male;
+            
+            int len = male ? maleLen : femaleLen;
+            int start = male ? maleStart : femaleStart;
+
+            byte[] newTextBytes = new byte[len];
+            for (int c = 0; c < newTextBytes.Length; c++)
+                newTextBytes[c] = reEncode[start + c];
+
+            return new ActuallyRawPayload(newTextBytes);
+        }
+        
+        private static bool ByteArrayEquals(ReadOnlySpan<byte> a1, ReadOnlySpan<byte> a2)
+        {
+            return a1.SequenceEqual(a2);
+        }
+        
         private static Payload TestNamePayload(Payload thisPayload)
         {
             byte[] reEncode = thisPayload.Encode();
@@ -199,53 +303,40 @@ namespace StrSandbox
             return thisPayload;
         }
 
-        public static void Main2(String args)
+        // Prints hex dump of a byte array in the form of a hex editor
+        // with the hex on the left and the ascii on the right
+        private static void PrintStackedView(byte[] arr, int width = 16, int height = 16)
         {
-            // var byteList = new List<byte>();
-            // int i = 0;
-            // while (ptr[i] != 0)
-            //     byteList[i] = ptr[i];
+            int i = 0;
+            while (i < arr.Length)
+            {
+                int j;
+                for (j = 0; j < width && i + j < arr.Length; j++)
+                    Console.Write($"{arr[i + j]:X2} ");
+                for (; j < width; j++)
+                    Console.Write("   ");
+                Console.Write("  ");
+                for (j = 0; j < width && i + j < arr.Length; j++)
+                    Console.Write($"{(char) arr[i + j]}");
+                Console.WriteLine();
+                i += width;
+            }
+        }
+        
+        private static unsafe void PrintStackedView(byte* arr, int width = 16, int height = 16)
+        {
+            var data = PtrToArray(arr);
+            PrintStackedView(data, width, height);
         }
 
-        private static unsafe void PrintStackedView(byte* ptr, int start, int len = 0)
+        private static unsafe byte[] PtrToArray(byte* ptr)
         {
             var byteList = new List<byte>();
             int q = 0;
             while (ptr[q] != 0)
                 byteList.Add(ptr[q++]);
             var arr = byteList.ToArray();
-            int length = len;
-            if (len == 0)
-                length = arr.Length;
-
-            StringBuilder numOut = new StringBuilder();
-            for (int i = 0; i < arr.Length; i++)
-                numOut.Append($"{i % 100:D2} ");
-
-            StringBuilder textOut = new StringBuilder();
-            for (int i = 0; i < arr.Length; i++)
-            {
-                string app;
-                if (arr[i] >= 32 && arr[i] <= 126)
-                    app = Encoding.ASCII.GetString(arr, i, 1).PadLeft(2, ' ');
-                else
-                    app = "[]";
-
-                textOut.Append($"{app} ");
-            }
-
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < arr.Length; i++)
-                sb.Append($"{arr[i]:X2} ");
-
-            Console.WriteLine(numOut.ToString().Substring(start * 3, Math.Min((arr.Length - start) * 3, length * 3)));
-            Console.WriteLine(textOut.ToString().Substring(start * 3, Math.Min((arr.Length - start) * 3, length * 3)));
-            Console.WriteLine(sb.ToString().Substring(start * 3, Math.Min((arr.Length - start) * 3, length * 3)));
-        }
-
-        private static unsafe void PrintStackedView(byte* arr)
-        {
-            PrintStackedView(arr, 0);
+            return arr;
         }
 
         private static string ByteArrayStr(byte[] arr)
